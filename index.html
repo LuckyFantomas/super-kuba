@@ -36,6 +36,26 @@
   .ed-tool { font-size:20px; width:42px; height:42px; border-radius:10px; border:2px solid transparent; background:rgba(255,255,255,.1); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
   .ed-tool.sel { border-color:#ffd23f; background:rgba(255,210,63,.22); }
   .ed-canvas { image-rendering:pixelated; background:#0d1830; border-radius:10px; max-width:100%; touch-action:none; cursor:crosshair; box-shadow:0 6px 18px rgba(0,0,0,.4); }
+  .lb-list { width:100%; max-width:520px; max-height:52vh; overflow-y:auto; margin:0 auto; display:flex; flex-direction:column; gap:5px; }
+  .lb-row { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.07); border-radius:10px; padding:9px 14px; font-size:15px; }
+  .lb-row.me { background:rgba(255,210,63,.22); outline:2px solid rgba(255,210,63,.5); }
+  .lb-rank { font-weight:900; width:34px; text-align:center; opacity:.9; }
+  .lb-rank.g1{ color:#ffd23f } .lb-rank.g2{ color:#cfd8e3 } .lb-rank.g3{ color:#e0965a }
+  .lb-nick { flex:1; font-weight:800; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lb-score { font-weight:900; color:#ffd23f; }
+  .bp-barwrap { position:relative; width:100%; max-width:480px; height:26px; background:rgba(0,0,0,.35); border-radius:999px; margin:8px auto 4px; overflow:hidden; border:1px solid rgba(255,255,255,.14); }
+  .bp-bar { height:100%; width:0%; background:linear-gradient(90deg,#ffd23f,#ff9f3f); transition:width .4s; }
+  .bp-bartext { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.5); }
+  .bp-tiers { width:100%; max-width:520px; max-height:52vh; overflow-y:auto; margin:8px auto 0; display:flex; flex-direction:column; gap:6px; }
+  .bp-tier { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.07); border-radius:12px; padding:10px 14px; }
+  .bp-tier.done { opacity:.6; }
+  .bp-tier.ready { background:rgba(56,193,114,.18); outline:2px solid rgba(56,193,114,.5); }
+  .bp-tnum { font-weight:900; width:30px; text-align:center; }
+  .bp-treward { flex:1; text-align:left; font-weight:700; }
+  .bp-tbtn { border:none; border-radius:10px; padding:8px 14px; font-weight:800; cursor:pointer; font-size:14px; }
+  .bp-tbtn.claim { background:linear-gradient(#7dff9b,#38c172); color:#053; }
+  .bp-tbtn.locked { background:rgba(255,255,255,.1); color:rgba(255,255,255,.5); cursor:default; }
+  .bp-tbtn.got { background:transparent; color:#7dff9b; cursor:default; }
   .btnrow { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .wallet { display:inline-flex; align-items:center; gap:8px; font-size:clamp(16px,4vw,20px); font-weight:800;
     background:rgba(0,0,0,.28); padding:8px 16px; border-radius:999px; border:1px solid rgba(255,255,255,.14); }
@@ -111,6 +131,8 @@
       <button class="btn ghost tr" id="btnModes">🎯 Herní módy</button>
       <button class="btn ghost tr" id="btnTrophies">🏆 Trofeje</button>
       <button class="btn ghost tr" id="btnShop">🛒 Obchod</button>
+      <button class="btn ghost tr" id="btnLeaders">🌐 Žebříček</button>
+      <button class="btn ghost tr" id="btnBattlePass">🎟️ Battle Pass</button>
       <button class="btn ghost tr" id="btnCreator">🛠️ Editor levelů</button>
       <button class="btn ghost tr" id="btnSettings">⚙️ Nastavení</button>
     </div>
@@ -172,6 +194,25 @@
     </div>
     <div id="edMsg" style="font-size:14px;color:#7dff9b;font-weight:700;height:20px;margin-top:6px;"></div>
     <div class="shop-wrap" style="margin-top:4px;"><div class="shop-sec"><h3 class="tr">Moje levely</h3><div id="edList" class="shop-row"></div></div></div>
+  </div>
+
+  <!-- 🌐 GLOBÁLNÍ ŽEBŘÍČEK -->
+  <div class="screen hidden" id="lbScreen">
+    <button class="btn ghost back tr" id="lbBack">← Zpět</button>
+    <div class="panel-title tr">🌐 Žebříček</div>
+    <div class="tag tr" style="margin-top:0;">Nejlepší hráči z celého světa. Vyber si mód.</div>
+    <div id="lbModes" class="btnrow" style="gap:7px;margin-top:4px;flex-wrap:wrap;"></div>
+    <div id="lbStatus" style="font-size:14px;opacity:.85;height:20px;margin:6px 0;font-weight:700;"></div>
+    <div id="lbList" class="lb-list"></div>
+  </div>
+
+  <!-- 🎟️ BATTLE PASS -->
+  <div class="screen hidden" id="bpScreen">
+    <button class="btn ghost back tr" id="bpBack">← Zpět</button>
+    <div class="panel-title tr">🎟️ Battle Pass</div>
+    <div class="tag" id="bpSub" style="margin-top:0;"></div>
+    <div class="bp-barwrap"><div class="bp-bar" id="bpBar"></div><div class="bp-bartext" id="bpBarText"></div></div>
+    <div id="bpTiers" class="bp-tiers"></div>
   </div>
 
   <!-- HERNÍ MÓDY -->
@@ -268,7 +309,7 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
   const LEVEL_COUNT=50;
   const defaultSave=()=>({ coins:0, unlocked:1, owned:["classic"], skin:"classic",
     up:{hp:0,jump:0,speed:0,magnet:0,triple:0,gold:0,longpow:0,shield:0}, done:{}, lastLevel:0, bestTimes:{}, bestRush:0,
-    stats:{kills:0,coins:0,levels:0,bosses:0,bestCombo:0,deaths:0}, achieved:[], stars:{}, ghosts:{}, bestEndless:0, music:true, rebirths:0, lang:"cs", nick:"", customLevels:[], weekly:{} });
+    stats:{kills:0,coins:0,levels:0,bosses:0,bestCombo:0,deaths:0}, achieved:[], stars:{}, ghosts:{}, bestEndless:0, music:true, rebirths:0, lang:"cs", nick:"", customLevels:[], weekly:{}, bp:{month:"",xp:0,claimed:[]} });
   let save;
   try { save=Object.assign(defaultSave(), JSON.parse(localStorage.getItem(SAVE_KEY)||"{}")); }
   catch(e){ save=defaultSave(); }
@@ -276,6 +317,7 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
   save.stats=Object.assign({kills:0,coins:0,levels:0,bosses:0,bestCombo:0,deaths:0}, save.stats||{});
   if(!Array.isArray(save.achieved)) save.achieved=[]; if(!save.stars) save.stars={}; if(!save.ghosts) save.ghosts={}; if(save.bestEndless==null) save.bestEndless=0;
   if(!Array.isArray(save.customLevels)) save.customLevels=[]; if(!save.weekly) save.weekly={};
+  if(!save.bp||typeof save.bp!=="object") save.bp={month:"",xp:0,claimed:[]}; if(!Array.isArray(save.bp.claimed)) save.bp.claimed=[];
   if(!Array.isArray(save.owned)||!save.owned.includes("classic")) save.owned=["classic"].concat((save.owned||[]).filter(s=>s!=="classic"));
   const persist=()=>{ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} };
 
@@ -372,6 +414,8 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
     "Zatím žádné. Postav a ulož si první!":"None yet. Build and save your first!","Hrát":"Play","Upravit":"Edit","Načteno k úpravě":"Loaded for editing",
     "Zvládl jsi svůj vlastní level!":"You beat your own level!","Vyčištěno":"Cleared",
     "Kód zkopírován – pošli ho kámošovi!":"Code copied — send it to a friend!","Zkopíruj kód levelu:":"Copy the level code:","Vlož kód levelu od kámoše:":"Paste a friend's level code:","Level načten! Můžeš hrát nebo upravit.":"Level loaded! Play or edit it.","Neplatný kód ❌":"Invalid code ❌","Odkaz zkopírován ✓":"Link copied ✓",
+    "🌐 Žebříček":"🌐 Leaderboard","Nejlepší hráči z celého světa. Vyber si mód.":"The best players worldwide. Pick a mode.",
+    "Načítám…":"Loading…","Žebříček se nepodařilo načíst (offline?).":"Couldn't load leaderboard (offline?).","Zatím tu nikdo není — buď první!":"Nobody here yet — be the first!","Top ":"Top ","level ":"level ",
   });
 
   // ================= Skiny & Upgrady =================
@@ -577,7 +621,7 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
   const goombasLeftOf=wx=>goombas.filter(g=>!g.dead&&(g.x+g.w/2)<wx).length;
 
   // ================= Hráč / stav =================
-  const SC={ MENU:0, LEVELS:1, SHOP:2, PLAY:3, COMPLETE:4, OVER:5, MODES:6, TROPHIES:7, SETTINGS:8, NICK:9, CREATOR:10 };
+  const SC={ MENU:0, LEVELS:1, SHOP:2, PLAY:3, COMPLETE:4, OVER:5, MODES:6, TROPHIES:7, SETTINGS:8, NICK:9, CREATOR:10, LEADERS:11, BATTLEPASS:12 };
   let scene=SC.MENU, paused=false;
   let gameMode="normal", levelTime=0, rushTime=0, rushCoins=0;   // 🎯 herní módy
   let ghostRec=[], ghostPlay=null, ghostRecT=0, ghostPos=null;   // 👻 ghost race (Time Attack)
@@ -941,8 +985,9 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
     if(gameMode==="creator"){ scene=SC.COMPLETE; sWin(); winFlash=1; spawnConfetti();   // 🛠️ vlastní level – bez odměny (anti-farm)
       $("compTitle").textContent=tr("🎉 Level hotov!"); $("compCoins").textContent="🎉"; $("compMsg").textContent=tr("Zvládl jsi svůj vlastní level!");
       $("compNext").style.display="inline-block"; showTouch(false); setTimeout(()=>{ hideAllScreens(); $("completeScreen").classList.remove("hidden"); lockUI(); },500); return; }
-    save.coins+=levelCoins; save.stats.coins+=levelCoins;
+    save.coins+=levelCoins; save.stats.coins+=levelCoins; bpAddXp(levelCoins);   // 🎟️ battle pass XP
     if(gameMode==="weekly"){ const prev=save.weekly[weeklyId]||0, isNew=levelCoins>prev, en=save.lang==="en"; save.weekly[weeklyId]=Math.max(prev,levelCoins); checkAchievements(); persist();
+      lbSubmit("weekly", levelCoins, weeklyId);   // 🌐 globální žebříček
       scene=SC.COMPLETE; sWin(); winFlash=1; spawnConfetti();
       $("compTitle").textContent="🗓️ "+tr("Výzva týdne"); $("compCoins").textContent="+"+levelCoins;
       $("compMsg").textContent=(isNew?(en?"New personal record! ":"Nový osobní rekord! "):(en?"Your record: ":"Tvůj rekord: "))+save.weekly[weeklyId]+" 💰";
@@ -950,7 +995,7 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
     if(gameMode==="coinrush"){ checkAchievements(); beginRun(curLevel+1<LEVEL_COUNT?curLevel+1:0); return; }   // 💰 plynule další level, dokud běží čas
     save.stats.levels++;
     const lvl=curLevel+1, at50=lvl===LEVEL_COUNT, endless=lvl>LEVEL_COUNT;   // 🔄 endless po 50
-    if(endless) save.bestEndless=Math.max(save.bestEndless||0, lvl);
+    if(endless){ save.bestEndless=Math.max(save.bestEndless||0, lvl); lbSubmit("endless", lvl); }   // 🌐 endless žebříček
     let newBest=false, stars=0;
     if(gameMode==="time"){ const t=Math.round(levelTime*10)/10; if(!save.bestTimes[lvl]||t<save.bestTimes[lvl]){ save.bestTimes[lvl]=t; newBest=true; save.ghosts[lvl]=ghostRec.slice(0,900); } }   // 👻 ulož nejlepší běh
     if(gameMode==="normal" && lvl<=LEVEL_COUNT){   // levely 1–50: ukládej postup a hvězdy (endless už ne)
@@ -974,12 +1019,13 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
     setTimeout(()=>{ hideAllScreens(); $("completeScreen").classList.remove("hidden"); lockUI(); },650);
   }
   function gameOver(){ scene=SC.OVER; paused=false; showTouch(false); persist(); const en=save.lang==="en", n=curLevel+1;
+    if(gameMode==="hardcore") lbSubmit("hardcore", n);   // 🌐 hardcore žebříček
     $("overMsg").textContent = (gameMode==="creator"||gameMode==="weekly") ? (en?"Try again!":"Zkus to znovu!")
       : en ? ((gameMode==="hardcore"?"💀 Hardcore over — you reached level ":"You reached level ")+n+".")
       : ((gameMode==="hardcore"?"💀 Hardcore konec – došel jsi do ":"Došel jsi do ")+n+". levelu.");
     setTimeout(()=>{ hideAllScreens(); $("overScreen").classList.remove("hidden"); lockUI(); },500); }
   function rushEnd(){ scene=SC.OVER; paused=false; showTouch(false); const en=save.lang==="en";
-    if(rushCoins>save.bestRush){ save.bestRush=rushCoins; } persist();
+    if(rushCoins>save.bestRush){ save.bestRush=rushCoins; } persist(); lbSubmit("coinrush", rushCoins);   // 🌐 žebříček
     $("overMsg").textContent = en ? ("💰 Coin Rush over! You collected "+rushCoins+" coins. Record: "+save.bestRush)
       : ("💰 Coin Rush konec! Nasbíral jsi "+rushCoins+" mincí. Rekord: "+save.bestRush);
     setTimeout(()=>{ hideAllScreens(); $("overScreen").classList.remove("hidden"); lockUI(); },400); }
@@ -1398,7 +1444,45 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
   function isoWeekId(){ const d=new Date(); const oneJan=new Date(d.getFullYear(),0,1); const day=Math.floor((d-oneJan)/86400000); return d.getFullYear()+"-W"+Math.ceil((day+oneJan.getDay()+1)/7); }
   function startWeekly(){ gameMode="weekly"; customPlay=null; weeklyId=isoWeekId(); weeklyIdx=14+(hashStr(weeklyId)%22); audio(); lives=startLives; startLevel(weeklyIdx); }
 
-  const screens=["menuScreen","levelsScreen","shopScreen","completeScreen","overScreen","pauseScreen","modesScreen","trophiesScreen","settingsScreen","nickScreen","creatorScreen"];
+  // ================= 🌐 Globální žebříček (Vercel backend + Blob) =================
+  const LB_API="https://superkuba.vercel.app/api/leaderboard";
+  const LB_MODES=[{k:"coinrush",ico:"💰",name:"Coin Rush",lvl:false},{k:"endless",ico:"🔄",name:"Endless",lvl:true},{k:"hardcore",ico:"💀",name:"Hardcore",lvl:true},{k:"weekly",ico:"🗓️",name:"Výzva týdne",lvl:false}];
+  let lbMode="coinrush";
+  async function lbSubmit(mode,score,weekId){ if(!save.nick||!(score>0)) return null; try{ const r=await fetch(LB_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nick:save.nick,mode,score,weekId})}); return await r.json(); }catch(e){ return null; } }
+  async function lbFetch(mode){ try{ const r=await fetch(LB_API+"?mode="+encodeURIComponent(mode)); return await r.json(); }catch(e){ return null; } }
+  function openLeaderboard(){ scene=SC.LEADERS; showTouch(false); hideAllScreens(); $("lbScreen").classList.remove("hidden"); lbBuildModes(); lbLoad(lbMode); lockUI(); }
+  function lbBuildModes(){ const p=$("lbModes"); p.innerHTML=""; LB_MODES.forEach(m=>{ const b=document.createElement("button"); b.className="btn "+(m.k===lbMode?"":"ghost"); b.style.cssText="min-width:0;padding:9px 13px;font-size:14px"; b.textContent=m.ico+" "+tr(m.name);
+    b.addEventListener("click",e=>{ e.preventDefault(); if(performance.now()<uiLockUntil) return; lbMode=m.k; lbBuildModes(); lbLoad(m.k); }); p.appendChild(b); }); }
+  async function lbLoad(mode){ const st=$("lbStatus"), list=$("lbList"); list.innerHTML=""; st.textContent=tr("Načítám…");
+    const data=await lbFetch(mode); if(scene!==SC.LEADERS||lbMode!==mode) return;
+    if(!data||!data.top){ st.textContent=tr("Žebříček se nepodařilo načíst (offline?)."); return; }
+    if(!data.top.length){ st.textContent=tr("Zatím tu nikdo není — buď první!"); return; }
+    const md=LB_MODES.find(m=>m.k===mode); st.textContent=tr("Top ")+data.top.length+" · "+md.ico+" "+tr(md.name);
+    data.top.forEach((e,i)=>{ const row=document.createElement("div"); row.className="lb-row"+(e.n===save.nick?" me":"");
+      const val = md.lvl ? (tr("level ")+e.s) : (e.s+" 💰");
+      row.innerHTML='<div class="lb-rank'+(i<3?" g"+(i+1):"")+'">'+(i<3?["🥇","🥈","🥉"][i]:(i+1))+'</div><div class="lb-nick"></div><div class="lb-score"></div>';
+      row.querySelector(".lb-nick").textContent=e.n; row.querySelector(".lb-score").textContent=val; list.appendChild(row); }); }
+
+  // ================= 🎟️ Battle Pass (lokální, měsíční reset) =================
+  const BP_TIERS=[{need:120,coins:40},{need:280,coins:60},{need:480,coins:80},{need:720,coins:100},{need:1000,coins:140},{need:1320,coins:180},{need:1680,coins:220},{need:2080,coins:280},{need:2520,coins:360},{need:3000,coins:600}];
+  function monthKey(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+  function ensureBP(){ const m=monthKey(); if(!save.bp||save.bp.month!==m){ save.bp={month:m,xp:0,claimed:[]}; persist(); } }
+  function bpAddXp(n){ if(!(n>0)) return; ensureBP(); save.bp.xp+=n; }
+  function openBattlePass(){ scene=SC.BATTLEPASS; showTouch(false); hideAllScreens(); $("bpScreen").classList.remove("hidden"); ensureBP(); buildBP(); lockUI(); }
+  function buildBP(){ const xp=save.bp.xp, maxNeed=BP_TIERS[BP_TIERS.length-1].need, en=save.lang==="en";
+    $("bpSub").textContent = (en?"Season ":"Sezóna ")+save.bp.month+" · "+(en?"resets monthly. Earn XP by collecting coins.":"resetuje se každý měsíc. XP získáš sbíráním mincí.");
+    $("bpBar").style.width=Math.min(100,Math.round(xp/maxNeed*100))+"%"; $("bpBarText").textContent="⭐ "+xp+" XP";
+    const box=$("bpTiers"); box.innerHTML="";
+    BP_TIERS.forEach((t,i)=>{ const reached=xp>=t.need, claimed=save.bp.claimed.includes(i);
+      const row=document.createElement("div"); row.className="bp-tier"+(claimed?" done":reached?" ready":"");
+      let btn = claimed ? '<button class="bp-tbtn got" disabled>✓</button>'
+        : reached ? '<button class="bp-tbtn claim" data-i="'+i+'">'+(en?"Claim":"Vyzvednout")+'</button>'
+        : '<button class="bp-tbtn locked" disabled>🔒 '+t.need+' XP</button>';
+      row.innerHTML='<div class="bp-tnum">'+(i+1)+'</div><div class="bp-treward">🎁 '+t.coins+' 💰</div>'+btn; box.appendChild(row); });
+    box.querySelectorAll(".bp-tbtn.claim").forEach(b=>b.addEventListener("click",e=>{ e.preventDefault(); if(performance.now()<uiLockUntil) return; const i=+b.dataset.i;
+      if(!save.bp.claimed.includes(i)&&save.bp.xp>=BP_TIERS[i].need){ save.bp.claimed.push(i); save.coins+=BP_TIERS[i].coins; sBuy(); persist(); refreshWallet(); buildBP(); } })); }
+
+  const screens=["menuScreen","levelsScreen","shopScreen","completeScreen","overScreen","pauseScreen","modesScreen","trophiesScreen","settingsScreen","nickScreen","creatorScreen","lbScreen","bpScreen"];
   function hideAllScreens(){ screens.forEach(id=>$(id).classList.add("hidden")); }
   function showTouch(v){ $("touch").classList.toggle("hidden", !v); $("btnPause").classList.toggle("hidden", !v); }
   function goMenu(){ scene=SC.MENU; paused=false; gameMode="normal"; showTouch(false); hideAllScreens(); $("menuScreen").classList.remove("hidden"); refreshWallet();
@@ -1526,6 +1610,10 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
   // 🛠️ Editor + 🗓️ Výzva týdne + 📤 Sdílet hru
   on("btnCreator",[SC.MENU],openCreator);
   on("creatorBack",[SC.CREATOR],goMenu);
+  on("btnLeaders",[SC.MENU],openLeaderboard);
+  on("lbBack",[SC.LEADERS],goMenu);
+  on("btnBattlePass",[SC.MENU],openBattlePass);
+  on("bpBack",[SC.BATTLEPASS],goMenu);
   on("modeWeekly",[SC.MODES],()=>requireNick(()=>startWeekly()));
   on("edTest",[SC.CREATOR],()=>requireNick(()=>startCustom(edMap.map(r=>r.slice()))));
   on("edSave",[SC.CREATOR],()=>{ const code=edEncode(edMap);

@@ -2,6 +2,8 @@
 
 Mario-style skákačka o **50 levelech** s menu, výběrem levelů, obchodem (skiny + upgrady) a ukládáním postupu. Jeden HTML soubor bez závislostí — otevřeš dvojklikem, funguje na PC i mobilu.
 
+🌐 **Hrát online:** **https://superkuba.vercel.app** (Vercel) · záloha: https://luckyfantomas.github.io/super-kuba/ (GitHub Pages)
+
 ## Ovládání
 - **◀ ▶** (šipky nebo `A`/`D`) — chůze
 - **mezerník / ↑ / `W`** — skok
