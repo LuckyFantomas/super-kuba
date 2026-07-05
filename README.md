@@ -69,6 +69,17 @@ Tlačítko **🛠️ Editor levelů** v menu. Postav si vlastní level v mříž
 ## 🗓️ Výzva týdne
 Herní mód **🗓️ Výzva týdne** — každý týden jiný level (deterministicky podle čísla týdne, pro všechny stejný) s vlastním **lokálním rekordem** (nejvíc mincí). Rekord se ukazuje v přehledu Herních módů.
 
+## 🌐 Globální žebříček (online)
+Tlačítko **🌐 Žebříček** v menu. **Skutečný globální leaderboard všech hráčů** — vybereš mód a vidíš **top 100** z celého světa (medaile 🥇🥈🥉, tvůj nick zvýrazněný). Módy: **Coin Rush** (nejvíc mincí), **Endless** (nejdál), **Hardcore** (nejdál), **Výzva týdne** (nejvíc mincí). Skóre se odešle automaticky po dokončení běhu v daném módu.
+- **Backend:** Vercel Serverless Function `api/leaderboard.js` + **Vercel Blob** jako úložiště (`lb-v1.json`). API endpoint `GET/POST /api/leaderboard`. CORS povolený → funguje i z GitHub Pages verze.
+- **Pozn.:** skóre posílá klient, takže to není chráněné proti podvádění (inherentní u čistě klientské hry). Pro Kubu a kámoše OK; server-authoritative validace by byla další krok.
+
+## 🎟️ Battle Pass (měsíční)
+Tlačítko **🎟️ Battle Pass** v menu. **Sezónní odměny s měsíčním resetem** (klíč `YYYY-MM`):
+- **XP** získáváš sbíráním mincí ve hře (progress bar nahoře).
+- **10 tierů**, každý odemkne odměnu (mince 40 → 600). Vyzvednuté mince jdou do peněženky.
+- **Reset:** každý první den měsíce se XP i vyzvednuté tiery vynulují → nová sezóna. (Lokální per hráč — nepotřebuje server.)
+
 ## ♻️ Rebirth (prestige)
 V obchodě nahoře je sekce **Rebirth**. Za nasbírané mince koupíš rebirth (cena roste: 1000, pak +2500 za každý další). Každý rebirth:
 - **+1 max úroveň všech upgradů** (můžeš je vylepšit výš, než šlo)
@@ -129,6 +140,7 @@ Létající příšery poletují ve vzduchu a zašlápneš je dvojskokem stejně
 
 ## Struktura
 - `index.html` — celá hra (canvas + JS + WebAudio zvuky, vše inline)
+- `api/leaderboard.js` — serverless funkce globálního žebříčku (nasazuje se na Vercel spolu s hrou; není potřeba pro lokální hraní)
 - `README.md` — tento soubor
 
 ## Jak spustit

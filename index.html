@@ -1430,7 +1430,7 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
   function edBuildList(){ const el=$("edList"); el.innerHTML="";
     if(!save.customLevels.length){ el.innerHTML='<div class="cdesc" style="opacity:.7">'+tr("Zatím žádné. Postav a ulož si první!")+'</div>'; return; }
     save.customLevels.forEach((lv,i)=>{ const card=document.createElement("div"); card.className="card";
-      card.innerHTML='<div class="cname">'+lv.name+'</div>';
+      const nm=document.createElement("div"); nm.className="cname"; nm.textContent=lv.name; card.appendChild(nm);   // textContent = bezpečné proti XSS z nicku
       const play=document.createElement("button"); play.className="cbtn sel"; play.textContent="▶ "+tr("Hrát");
       play.addEventListener("click",e=>{ e.preventDefault(); if(performance.now()<uiLockUntil) return; const m=edDecode(lv.code); if(m) startCustom(m); });
       const edit=document.createElement("button"); edit.className="cbtn"; edit.textContent="✏️ "+tr("Upravit");
@@ -1588,9 +1588,10 @@ window.addEventListener('error', e => { window.__err = (e.message||'')+' @'+(e.f
   on("langCs",[SC.SETTINGS],()=>setLang("cs"));
   on("langEn",[SC.SETTINGS],()=>setLang("en"));
   // přezdívka v nastavení
-  on("nickSave",[SC.SETTINGS],()=>{ const v=($("nickEdit").value||"").trim().slice(0,14); if(v){ save.nick=v; persist(); applyLang(); const m=$("nickEdit"); m.style.borderColor="#38c172"; setTimeout(()=>m.style.borderColor="rgba(255,255,255,.2)",700); } });
+  const nickClean=s=>String(s||"").replace(/[^\p{L}\p{N} _.\-]/gu,"").trim().slice(0,14);   // jen bezpečné znaky (žádné <>&" apod.)
+  on("nickSave",[SC.SETTINGS],()=>{ const v=nickClean($("nickEdit").value); if(v){ save.nick=v; $("nickEdit").value=v; persist(); applyLang(); const m=$("nickEdit"); m.style.borderColor="#38c172"; setTimeout(()=>m.style.borderColor="rgba(255,255,255,.2)",700); } });
   // přezdívka – přihlašovací obrazovka
-  const submitNick=()=>{ const v=($("nickInput").value||"").trim().slice(0,14);
+  const submitNick=()=>{ const v=nickClean($("nickInput").value);
     if(v.length<2){ $("nickErr").textContent = save.lang==="en"?"At least 2 characters.":"Aspoň 2 znaky."; return; }
     save.nick=v; persist(); const nx=nickNext; nickNext=null; if(nx) nx(); else goMenu(); };
   $("nickGo").addEventListener("click",e=>{ e.preventDefault(); if(scene===SC.NICK) submitNick(); });
